@@ -1,34 +1,38 @@
 pipeline {
-
     agent any
 
     stages {
 
-        stage('Checkout') {
+        stage('Clone') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Stop Old Containers') {
-            steps {
-                sh '''
-                    docker compose down || true
-                '''
+                git branch: 'main',
+                    url: 'YOUR_GITHUB_REPO_URL'
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                sh '''
-                    docker compose build --no-cache
-                '''
+                sh 'docker compose build'
+            }
+        }
+
+        stage('Create Backend Env') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'backend.env', variable: 'BACKEND_ENV')
+                ]) {
+                    sh '''
+                        cp "$BACKEND_ENV" backend/.env
+                        ls -l backend/.env
+                    '''
+                }
             }
         }
 
         stage('Start Application') {
             steps {
                 sh '''
+                    docker compose down
                     docker compose up -d
                 '''
             }
@@ -38,25 +42,19 @@ pipeline {
             steps {
                 sh '''
                     docker compose ps
+                    docker ps
                 '''
             }
         }
     }
 
     post {
-
         success {
-            echo 'Hospital Referral System deployed successfully!'
+            echo 'Deployment successful.'
         }
-
         failure {
+            sh 'docker compose ps || true'
             echo 'Deployment failed. Check Jenkins console logs.'
-        }
-
-        always {
-            sh '''
-                docker compose ps || true
-            '''
         }
     }
 }

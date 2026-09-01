@@ -3,27 +3,40 @@ pipeline {
 
     stages {
 
-        stage('Clone') {
+        stage('Checkout') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/harikamekala222/hospital-referral-system.git'
             }
         }
 
+        stage('Stop Old Containers') {
+            steps {
+                sh '''
+                    docker compose down || true
+                '''
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
-                sh 'docker compose build'
+                sh '''
+                    docker compose build --no-cache
+                '''
             }
         }
 
         stage('Create Backend Env') {
             steps {
                 withCredentials([
-                    file(credentialsId: 'backend.env', variable: 'BACKEND_ENV')
+                    file(
+                        credentialsId: 'hospital-backend-env',
+                        variable: 'BACKEND_ENV'
+                    )
                 ]) {
                     sh '''
                         cp "$BACKEND_ENV" backend/.env
-                        ls -l backend/.env
+                        chmod 600 backend/.env
                     '''
                 }
             }
@@ -32,7 +45,6 @@ pipeline {
         stage('Start Application') {
             steps {
                 sh '''
-                    docker compose down
                     docker compose up -d
                 '''
             }
@@ -50,8 +62,9 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment successful.'
+            echo 'Deployment successful!'
         }
+
         failure {
             sh 'docker compose ps || true'
             echo 'Deployment failed. Check Jenkins console logs.'

@@ -6,6 +6,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
+                    credentialsId: 'Git-creds',
                     url: 'https://github.com/harikamekala222/hospital-referral-system.git'
             }
         }
@@ -13,16 +14,16 @@ pipeline {
         stage('Stop Old Containers') {
             steps {
                 sh '''
-                    docker compose down || true
+                    docker compose down --remove-orphans || true
+
+                    docker rm -f hospital-mysql hospital-backend hospital-frontend 2>/dev/null || true
                 '''
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                sh '''
-                    docker compose build --no-cache
-                '''
+                sh 'docker compose build --no-cache'
             }
         }
 
@@ -44,9 +45,7 @@ pipeline {
 
         stage('Start Application') {
             steps {
-                sh '''
-                    docker compose up -d
-                '''
+                sh 'docker compose up -d'
             }
         }
 

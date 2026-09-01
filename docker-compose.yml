@@ -1,0 +1,66 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: hospital-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: hospital
+      MYSQL_USER: hospitaluser
+      MYSQL_PASSWORD: hospitalpassword
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    networks:
+      - hospital-network
+
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: hospital-backend
+    restart: unless-stopped
+
+    env_file:
+      - ./backend/.env
+
+    depends_on:
+      - mysql
+
+    ports:
+      - "4000:4000"
+
+    networks:
+      - hospital-network
+
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://13.127.100.25:4000/api
+
+    container_name: hospital-frontend
+    restart: unless-stopped
+
+    depends_on:
+      - backend
+
+    ports:
+      - "80:80"
+
+    networks:
+      - hospital-network
+
+
+volumes:
+  mysql_data:
+
+
+networks:
+  hospital-network:
+    driver: bridge

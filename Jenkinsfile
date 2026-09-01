@@ -10,32 +10,53 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Stop Old Containers') {
             steps {
-                sh 'docker compose build'
+                sh '''
+                    docker compose down || true
+                '''
             }
         }
 
-        stage('Deploy') {
+        stage('Build Docker Images') {
             steps {
-                sh 'docker compose up -d'
+                sh '''
+                    docker compose build --no-cache
+                '''
             }
         }
 
-        stage('Verify') {
+        stage('Start Application') {
             steps {
-                sh 'docker compose ps'
+                sh '''
+                    docker compose up -d
+                '''
+            }
+        }
+
+        stage('Check Containers') {
+            steps {
+                sh '''
+                    docker compose ps
+                '''
             }
         }
     }
 
     post {
+
         success {
-            echo 'Deployment successful'
+            echo 'Hospital Referral System deployed successfully!'
         }
 
         failure {
-            echo 'Deployment failed'
+            echo 'Deployment failed. Check Jenkins console logs.'
+        }
+
+        always {
+            sh '''
+                docker compose ps || true
+            '''
         }
     }
 }

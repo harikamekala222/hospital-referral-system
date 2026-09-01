@@ -6,7 +6,7 @@ pipeline {
         stage('Clone') {
             steps {
                 git branch: 'main',
-                    url: 'YOUR_GITHUB_REPO_URL'
+                    url: 'https://github.com/harikamekala222/hospital-referral-system.git'
             }
         }
 
